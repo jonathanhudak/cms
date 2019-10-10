@@ -1,8 +1,15 @@
 import React from "react";
 import { useAccount } from "@jmhudak/strapi-auth";
 import { Box, Flex, Text, Heading, Button } from "rebass";
-import { Label, Input } from "@rebass/forms";
-import { useHistory } from "react-router";
+import { Label, Input, Textarea } from "@rebass/forms";
+import {
+  useHistory,
+  Switch,
+  Route,
+  Link,
+  useRouteMatch,
+  useParams
+} from "react-router-dom";
 import { useQuery, useMutation } from "@apollo/react-hooks";
 import { gql } from "apollo-boost";
 
@@ -27,6 +34,16 @@ function AccountInfo() {
 const PAGES = gql`
   {
     pages {
+      id
+      title
+      content
+    }
+  }
+`;
+
+const PAGE = gql`
+  query GetPage($id: ID!) {
+    page(id: $id) {
       id
       title
       content
@@ -101,6 +118,7 @@ function AddPage() {
 }
 
 function PageItem({ page }) {
+  let { path } = useRouteMatch();
   const [deletePage, { error }] = useMutation(DELETE_PAGE, {
     update(
       cache,
@@ -119,7 +137,9 @@ function PageItem({ page }) {
   });
   return (
     <Flex as='li' justifyContent='space-between' alignItems='center'>
-      <Text>{page.title}</Text>
+      <Link to={`${path}/${page.id}`}>
+        <Text>{page.title}</Text>
+      </Link>
       <Box>
         <Button
           onClick={() => deletePage({ variables: { id: page.id } })}
@@ -153,12 +173,104 @@ function Pages() {
   );
 }
 
+const UPDATE_PAGE = gql`
+  mutation UpdatePage($id: ID!, $title: String, $content: JSON) {
+    updatePage(
+      input: { where: { id: $id }, data: { title: $title, content: $content } }
+    ) {
+      page {
+        title
+        content
+      }
+    }
+  }
+`;
+
+function EditPage() {
+  let titleInput;
+  let contentInput;
+  const { id } = useParams();
+  console.log("pageId", id);
+  const { loading, error, data } = useQuery(PAGE, {
+    variables: { id }
+  });
+  const [updatePage, { error: updatePageError }] = useMutation(UPDATE_PAGE, {
+    update(
+      cache,
+      {
+        data: { page: pageUpdate }
+      }
+    ) {
+      cache.writeQuery({
+        query: PAGE,
+        data: { page: pageUpdate }
+      });
+    }
+  });
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error :( ${error.message}</p>;
+  if (updatePageError) return <p>${updatePageError.message}</p>;
+  const { page } = data;
+  return (
+    <Box
+      as='form'
+      onSubmit={e => {
+        e.preventDefault();
+        console.log(titleInput.value, contentInput.value);
+        updatePage({
+          variables: {
+            id: page.id,
+            title: titleInput.value,
+            content: contentInput.value
+          }
+        });
+      }}
+    >
+      <Box>
+        <Label htmlFor='title'>Title</Label>
+        <Input
+          id='title'
+          name='title'
+          defaultValue={page.title}
+          ref={el => {
+            titleInput = el;
+          }}
+        />
+      </Box>
+      <Box>
+        <Label htmlFor='content'>Content</Label>
+        <Textarea
+          id='content'
+          name='content'
+          defaultValue={page.content}
+          ref={el => {
+            contentInput = el;
+          }}
+        />
+      </Box>
+      <Button type='submit'>Update page</Button>
+    </Box>
+  );
+}
+
 export default function Dashboard() {
+  let { path, url } = useRouteMatch();
   return (
     <div>
       <AccountInfo />
       <h1>Hello CMS!</h1>
-      <Pages />
+      <nav>
+        <Link to={`${url}/pages`}>Pages</Link>
+      </nav>
+
+      <Switch>
+        <Route exact path={`${path}/pages`}>
+          <Pages />
+        </Route>
+        <Route path={`${path}/pages/:id`}>
+          <EditPage />
+        </Route>
+      </Switch>
     </div>
   );
 }
