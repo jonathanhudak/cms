@@ -154,6 +154,7 @@ function PageItem({ page }) {
 }
 
 function Pages() {
+  let { path } = useRouteMatch();
   const { loading, error, data } = useQuery(PAGES);
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error :(</p>;
@@ -161,13 +162,11 @@ function Pages() {
   return (
     <Box>
       <Heading>Pages</Heading>
+      <Link to={`${path}/new`}>Add a new page</Link>
       <Box as='ul'>
         {pages.map(page => (
           <PageItem key={page.id} page={page} />
         ))}
-        <Box as='li'>
-          <AddPage />
-        </Box>
       </Box>
     </Box>
   );
@@ -266,6 +265,9 @@ export default function Dashboard() {
       <Switch>
         <Route exact path={`${path}/pages`}>
           <Pages />
+        </Route>
+        <Route path={`${path}/pages/new`}>
+          <AddPage />
         </Route>
         <Route path={`${path}/pages/:id`}>
           <EditPage />
