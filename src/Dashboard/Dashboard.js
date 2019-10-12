@@ -1,7 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { useAccount } from "@jmhudak/strapi-auth";
 import { Box, Flex, Text, Heading, Button } from "rebass";
 import { Label, Input, Textarea } from "@rebass/forms";
+import { Editor } from "react-draft-wysiwyg";
+import { EditorState, convertToRaw } from "draft-js";
+import "react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
 import {
   useHistory,
   Switch,
@@ -185,11 +188,23 @@ const UPDATE_PAGE = gql`
   }
 `;
 
+function TextEditor() {
+  const [editorState, setEditorState] = useState(EditorState.createEmpty());
+
+  return (
+    <div>
+      <Editor editorState={editorState} onEditorStateChange={setEditorState} />
+      <pre>
+        {JSON.stringify(convertToRaw(editorState.getCurrentContent()), null, 2)}
+      </pre>
+    </div>
+  );
+}
+
 function EditPage() {
   let titleInput;
   let contentInput;
   const { id } = useParams();
-  console.log("pageId", id);
   const { loading, error, data } = useQuery(PAGE, {
     variables: { id }
   });
@@ -246,6 +261,9 @@ function EditPage() {
             contentInput = el;
           }}
         />
+      </Box>
+      <Box>
+        <TextEditor />
       </Box>
       <Button type='submit'>Update page</Button>
     </Box>
