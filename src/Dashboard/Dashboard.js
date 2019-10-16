@@ -12,6 +12,7 @@ import {
 } from "react-router-dom";
 import { useQuery, useMutation } from "@apollo/react-hooks";
 import { gql } from "apollo-boost";
+import Files from 'Dashboard/Files';
 
 function AccountInfo() {
   const { account, logout } = useAccount();
@@ -260,6 +261,7 @@ export default function Dashboard() {
       <h1>Hello CMS!</h1>
       <nav>
         <Link to={`${url}/pages`}>Pages</Link>
+        <Link to={`${url}/files`}>Files</Link>
       </nav>
 
       <Switch>
@@ -271,6 +273,9 @@ export default function Dashboard() {
         </Route>
         <Route path={`${path}/pages/:id`}>
           <EditPage />
+        </Route>
+        <Route path={`${path}/files`}>
+          <Files />
         </Route>
       </Switch>
     </div>
